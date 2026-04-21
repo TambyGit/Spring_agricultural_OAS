@@ -12,7 +12,6 @@ import java.util.*;
 public class CollectivityService {
     private final CollectivityDao collectivityDao;
     private final MemberDao memberDao;
-
     public CollectivityService(CollectivityDao collectivityDao, MemberDao memberDao) {
         this.collectivityDao = collectivityDao;
         this.memberDao = memberDao;
@@ -20,18 +19,13 @@ public class CollectivityService {
 
     public List<Collectivity> createCollectivities(List<CreateCollectivity> createCollectivities) throws SQLException {
         List<Collectivity> createdCollectivities = new ArrayList<>();
-
         for (CreateCollectivity createCollectivity : createCollectivities) {
-
             if (createCollectivity.getFederationApproval() == null || !createCollectivity.getFederationApproval()) {
                 throw new IllegalArgumentException("Collectivity without federation approval");
             }
-
             if (createCollectivity.getStructure() == null) {
                 throw new IllegalArgumentException("Structure missing");
             }
-
-
             List<Member> members = new ArrayList<>();
             if (createCollectivity.getMembers() != null) {
                 for (String memberId : createCollectivity.getMembers()) {
@@ -43,17 +37,14 @@ public class CollectivityService {
                 }
             }
 
-
             CreateCollectivityStructure structure = createCollectivity.getStructure();
             Optional<Member> president = memberDao.findById(structure.getPresident());
             Optional<Member> vicePresident = memberDao.findById(structure.getVicePresident());
             Optional<Member> treasurer = memberDao.findById(structure.getTreasurer());
             Optional<Member> secretary = memberDao.findById(structure.getSecretary());
-
             if (president.isEmpty() || vicePresident.isEmpty() || treasurer.isEmpty() || secretary.isEmpty()) {
                 throw new IllegalArgumentException("Member not found in structure");
             }
-
 
             String collectivityId = UUID.randomUUID().toString();
             Collectivity collectivity = new Collectivity();
@@ -61,16 +52,13 @@ public class CollectivityService {
             collectivity.setLocation(createCollectivity.getLocation());
             collectivity.setFederationApproval(createCollectivity.getFederationApproval());
 
-
             collectivityDao.save(collectivity);
-
 
             collectivityDao.saveStructure(collectivityId,
                     structure.getPresident(),
                     structure.getVicePresident(),
                     structure.getTreasurer(),
                     structure.getSecretary());
-
 
             CollectivityStructure collectivityStructure = new CollectivityStructure();
             collectivityStructure.setPresident(president.get());
@@ -81,14 +69,11 @@ public class CollectivityService {
 
             collectivity.setMembers(members);
 
-
             for (Member member : members) {
                 collectivityDao.addMemberToCollectivity(collectivityId, member.getId());
             }
-
             createdCollectivities.add(collectivity);
         }
-
         return createdCollectivities;
     }
 }

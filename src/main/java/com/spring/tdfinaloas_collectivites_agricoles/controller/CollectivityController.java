@@ -1,9 +1,17 @@
 package com.spring.tdfinaloas_collectivites_agricoles.controller;
 
+import com.spring.tdfinaloas_collectivites_agricoles.model.Collectivity;
+import com.spring.tdfinaloas_collectivites_agricoles.model.CreateCollectivity;
 import com.spring.tdfinaloas_collectivites_agricoles.service.CollectivityService;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+
+import java.sql.SQLException;
+import java.util.List;
 
 @RestController
 @RequestMapping("/collectivities")

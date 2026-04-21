@@ -11,22 +11,17 @@ import java.util.*;
 @Service
 public class MemberService {
     private final MemberDao memberDao;
-
     public MemberService(MemberDao memberDao) {
         this.memberDao = memberDao;
     }
 
     public List<Member> createMembers(List<CreateMember> createMembers) throws SQLException {
         List<Member> createdMembers = new ArrayList<>();
-
         for (CreateMember createMember : createMembers) {
-
             if (createMember.getRegistrationFeePaid() == null || !createMember.getRegistrationFeePaid() ||
                     createMember.getMembershipDuesPaid() == null || !createMember.getMembershipDuesPaid()) {
                 throw new IllegalArgumentException("Membership dues not paid or registration fee not paid");
             }
-
-
             if (createMember.getReferees() != null && !createMember.getReferees().isEmpty()) {
                 for (RefereeInput refereeInput : createMember.getReferees()) {
                     if (!memberDao.existsById(refereeInput.getRefereeId())) {
@@ -51,7 +46,6 @@ public class MemberService {
 
             memberDao.save(member);
 
-
             Payment payment = new Payment();
             payment.setMemberId(memberId);
             payment.setCollectivityId(createMember.getCollectivityIdentifier());
@@ -61,14 +55,12 @@ public class MemberService {
             memberDao.savePayment(payment);
             member.setPayment(payment);
 
-
             Membership membership = new Membership();
             membership.setMemberId(memberId);
             membership.setCollectivityId(createMember.getCollectivityIdentifier());
             membership.setJoinDate(LocalDate.now());
             memberDao.saveMembership(membership);
             member.setMembership(membership);
-
 
             List<Referee> referees = new ArrayList<>();
             if (createMember.getReferees() != null) {
@@ -78,17 +70,14 @@ public class MemberService {
                     referee.setRefereeId(refereeInput.getRefereeId());
                     referee.setRelationship(refereeInput.getRelationship());
                     memberDao.saveReferee(referee);
-
                     Optional<Member> refereeDetails = memberDao.findById(refereeInput.getRefereeId());
                     refereeDetails.ifPresent(referee::setRefereeDetails);
                     referees.add(referee);
                 }
             }
             member.setReferees(referees);
-
             createdMembers.add(member);
         }
-
         return createdMembers;
     }
 }

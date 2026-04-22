@@ -12,12 +12,15 @@ import java.util.*;
 public class CollectivityService {
     private final CollectivityDao collectivityDao;
     private final MemberDao memberDao;
+    
     public CollectivityService(CollectivityDao collectivityDao, MemberDao memberDao) {
         this.collectivityDao = collectivityDao;
         this.memberDao = memberDao;
     }
 
+
     public List<Collectivity> createCollectivities(List<CreateCollectivity> createCollectivities) throws SQLException {
+
         List<Collectivity> createdCollectivities = new ArrayList<>();
         for (CreateCollectivity createCollectivity : createCollectivities) {
             if (createCollectivity.getFederationApproval() == null || !createCollectivity.getFederationApproval()) {
@@ -75,5 +78,50 @@ public class CollectivityService {
             createdCollectivities.add(collectivity);
         }
         return createdCollectivities;
+    }
+
+
+    public Collectivity assignNumberAndName(String collectivityId, String number, String name) throws SQLException {
+
+        Optional<Collectivity> collectivityOpt = collectivityDao.findById(collectivityId);
+        if (collectivityOpt.isEmpty()) {
+            throw new IllegalArgumentException("Collectivity not found: " + collectivityId);
+        }
+        
+        Collectivity collectivity = collectivityOpt.get();
+        
+
+        if (collectivity.hasAttribution()) {
+            throw new IllegalStateException("Collectivity already has a number and name. Modification is not allowed.");
+        }
+        
+
+        if (collectivityDao.existsByName(name)) {
+            throw new IllegalArgumentException("The name '" + name + "' is already used by another collectivity.");
+        }
+        
+
+        String finalNumber = number;
+        if (finalNumber == null || finalNumber.trim().isEmpty()) {
+            finalNumber = generateUniqueNumber();
+        } else {
+            if (collectivityDao.existsByNumber(finalNumber)) {
+                throw new IllegalArgumentException("The number '" + finalNumber + "' is already used by another collectivity.");
+            }
+        }
+        
+
+        collectivityDao.updateNumberAndName(collectivityId, finalNumber, name);
+        
+
+        return collectivityDao.findById(collectivityId).orElseThrow(() -> new SQLException("Failed to retrieve updated collectivity"));
+    }
+    
+    private String generateUniqueNumber() throws SQLException {
+        String number;
+        do {
+            number = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        } while (collectivityDao.existsByNumber(number));
+        return number;
     }
 }

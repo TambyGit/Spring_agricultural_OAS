@@ -1,10 +1,11 @@
 package com.spring.tdfinaloas_collectivites_agricoles.dao;
 
-import com.spring.tdfinaloas_collectivites_agricoles.configuration.DataSource;
+import com.spring.tdfinaloas_collectivites_agricoles.configuration.CustomDataSource;
 import com.spring.tdfinaloas_collectivites_agricoles.model.Collectivity;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Connection;
+
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -12,15 +13,15 @@ import java.util.Optional;
 
 @Repository
 public class CollectivityDao {
-    private final DataSource dataSource;
+    private final CustomDataSource customDataSource;
 
-    public CollectivityDao(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public CollectivityDao(CustomDataSource customDataSource) {
+        this.customDataSource = customDataSource;
     }
 
     public void save(Collectivity collectivity) throws SQLException {
         String sql = "INSERT INTO collectivities (id, location, federation_approval) VALUES (?, ?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, collectivity.getId());
             stmt.setString(2, collectivity.getLocation());
@@ -32,7 +33,7 @@ public class CollectivityDao {
     public void saveStructure(String collectivityId, String presidentId, String vicePresidentId, String treasurerId, String secretaryId) throws SQLException {
         String sql = "INSERT INTO collectivity_structure (collectivity_id, president_id, vice_president_id, " +
                 "treasurer_id, secretary_id) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, collectivityId);
             stmt.setString(2, presidentId);
@@ -45,7 +46,7 @@ public class CollectivityDao {
 
     public Optional<Collectivity> findById(String id) throws SQLException {
         String sql = "SELECT * FROM collectivities WHERE id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -62,7 +63,7 @@ public class CollectivityDao {
 
     public void addMemberToCollectivity(String collectivityId, String memberId) throws SQLException {
         String sql = "INSERT INTO collectivity_members (collectivity_id, member_id) VALUES (?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, collectivityId);
             stmt.setString(2, memberId);
@@ -72,7 +73,7 @@ public class CollectivityDao {
 
     public Optional<Collectivity> findStructureByCollectivityId(String collectivityId) throws SQLException {
         String sql = "SELECT * FROM collectivity_structure WHERE collectivity_id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, collectivityId);
             ResultSet rs = stmt.executeQuery();

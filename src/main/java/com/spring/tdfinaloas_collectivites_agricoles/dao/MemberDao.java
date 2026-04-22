@@ -1,6 +1,6 @@
 package com.spring.tdfinaloas_collectivites_agricoles.dao;
 
-import com.spring.tdfinaloas_collectivites_agricoles.configuration.DataSource;
+import com.spring.tdfinaloas_collectivites_agricoles.configuration.CustomDataSource;
 import com.spring.tdfinaloas_collectivites_agricoles.model.*;
 import com.spring.tdfinaloas_collectivites_agricoles.model.enums.Gender;
 import com.spring.tdfinaloas_collectivites_agricoles.model.enums.MemberOccupation;
@@ -13,16 +13,16 @@ import java.util.*;
 
 @Repository
 public class MemberDao {
-    private final DataSource dataSource;
+    private final CustomDataSource customDataSource;
 
-    public MemberDao(DataSource dataSource) {
-        this.dataSource = dataSource;
+    public MemberDao(CustomDataSource customDataSource) {
+        this.customDataSource = customDataSource;
     }
 
     public void save(Member member) throws SQLException {
         String sql = "INSERT INTO members (id, first_name, last_name, birth_date, gender, address, " +
                 "profession, phone_number, email, occupation) VALUES (?, ?, ?, ?, ?::gender_enum, ?, ?, ?, ?, ?::occupation_enum)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, member.getId());
             stmt.setString(2, member.getFirstName());
@@ -40,7 +40,7 @@ public class MemberDao {
 
     public void savePayment(Payment payment) throws SQLException {
         String sql = "INSERT INTO payments (member_id, collectivity_id, registration_fee_paid, membership_dues_paid, amount) VALUES (?, ?, ?, ?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, payment.getMemberId());
             stmt.setString(2, payment.getCollectivityId());
@@ -53,7 +53,7 @@ public class MemberDao {
 
     public void saveMembership(Membership membership) throws SQLException {
         String sql = "INSERT INTO memberships (member_id, collectivity_id, join_date) VALUES (?, ?, ?)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, membership.getMemberId());
             stmt.setString(2, membership.getCollectivityId());
@@ -64,7 +64,7 @@ public class MemberDao {
 
     public void saveReferee(Referee referee) throws SQLException {
         String sql = "INSERT INTO member_referees (member_id, referee_id, relationship) VALUES (?, ?, ?::relationship_enum)";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, referee.getMemberId());
             stmt.setString(2, referee.getRefereeId());
@@ -75,7 +75,7 @@ public class MemberDao {
 
     public Optional<Member> findById(String id) throws SQLException {
         String sql = "SELECT * FROM members WHERE id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -90,7 +90,7 @@ public class MemberDao {
         if (ids == null || ids.isEmpty()) return new ArrayList<>();
         String placeholders = String.join(",", Collections.nCopies(ids.size(), "?"));
         String sql = "SELECT * FROM members WHERE id IN (" + placeholders + ")";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             for (int i = 0; i < ids.size(); i++) {
                 stmt.setString(i + 1, ids.get(i));
@@ -106,7 +106,7 @@ public class MemberDao {
 
     public boolean existsById(String id) throws SQLException {
         String sql = "SELECT COUNT(*) FROM members WHERE id = ?";
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, id);
             ResultSet rs = stmt.executeQuery();
@@ -120,7 +120,7 @@ public class MemberDao {
     public List<Referee> findRefereesByMemberId(String memberId) throws SQLException {
         String sql = "SELECT * FROM member_referees WHERE member_id = ?";
         List<Referee> referees = new ArrayList<>();
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, memberId);
             ResultSet rs = stmt.executeQuery();
@@ -138,7 +138,7 @@ public class MemberDao {
     public Optional<Payment> findPaymentByMemberId(String memberId) throws SQLException {
         String sql = "SELECT * FROM payments WHERE member_id = ? ORDER BY payment_date DESC LIMIT 1";
 
-        try (Connection conn = dataSource.getConnection();
+        try (Connection conn = (Connection) customDataSource.getConnection();
              PreparedStatement stmt = conn.prepareStatement(sql)) {
             stmt.setString(1, memberId);
             ResultSet rs = stmt.executeQuery();

@@ -30,7 +30,7 @@ public class PaymentService {
     }
 
     @Transactional
-    public List<MemberPayment> createPayments(String memberId, List<CreateMemberPayment> paymentRequests) throws SQLException {
+    public List<MemberPayment> createPayments(String memberId, List<MemberPayment> paymentRequests) throws SQLException {
         List<MemberPayment> createdPayments = new ArrayList<>();
 
 
@@ -40,7 +40,7 @@ public class PaymentService {
         }
 
         Member member = memberOpt.get();
-        String collectivityId = member.getCollectivityIdentifier();
+        String collectivityId = member.getId();
 
 
         Optional<Collectivity> collectivityOpt = collectivityDao.findById(collectivityId);
@@ -48,11 +48,11 @@ public class PaymentService {
             throw new IllegalArgumentException("Collectivity not found for this member");
         }
 
-        for (CreateMemberPayment request : paymentRequests) {
+        for (MemberPayment request : paymentRequests) {
 
-            Optional<MembershipFee> feeOpt = membershipFeeDao.findById(request.getMembershipFeeIdentifier());
+            Optional<MembershipFee> feeOpt = membershipFeeDao.findById(request.getMembershipFeeId());
             if (feeOpt.isEmpty()) {
-                throw new IllegalArgumentException("Membership fee not found: " + request.getMembershipFeeIdentifier());
+                throw new IllegalArgumentException("Membership fee not found: " + request.getMembershipFeeId());
             }
 
             MembershipFee fee = feeOpt.get();
@@ -66,14 +66,14 @@ public class PaymentService {
             MemberPayment payment = new MemberPayment();
             payment.setId(UUID.randomUUID().toString());
             payment.setMemberId(memberId);
-            payment.setMembershipFeeId(request.getMembershipFeeIdentifier());
-            payment.setAmount(BigDecimal.valueOf(request.getAmount()));
+            payment.setMembershipFeeId(request.getMembershipFeeId());
+            payment.setAmount(request.getAmount());
             payment.setPaymentMode(request.getPaymentMode());
-            payment.setAccountCreditedId(request.getAccountCreditedIdentifier());
+            payment.setAccountCreditedId(request.getMembershipFeeId());
             payment.setPaymentDate(LocalDateTime.now());
 
 
-            BigDecimal federationShare = payment.getAmount().multiply(BigDecimal.valueOf(0.01));
+            Double federationShare = payment.getAmount() * (0.01);
             payment.setFederationShare(federationShare);
 
 
@@ -83,12 +83,12 @@ public class PaymentService {
             transaction.setMemberId(memberId);
             transaction.setAmount(payment.getAmount());
             transaction.setPaymentMode(request.getPaymentMode());
-            transaction.setAccountCreditedId(request.getAccountCreditedIdentifier());
+            transaction.setAccountCreditedId(request.getAccountCreditedId());
             transaction.setTransactionDate(LocalDateTime.now());
             transaction.setType("MEMBERSHIP_FEE");
 
 
-            updateAccountBalance(request.getAccountCreditedIdentifier(), payment.getAmount());
+            updateAccountBalance(request.getAccountCreditedId(), payment.getAmount());
 
 
             savePayment(payment);
@@ -100,7 +100,7 @@ public class PaymentService {
         return createdPayments;
     }
 
-    private void updateAccountBalance(String accountId, BigDecimal amount) throws SQLException {
+    private void updateAccountBalance(String accountId, Double amount) throws SQLException {
 
     }
 

@@ -14,9 +14,6 @@ import java.sql.SQLException;
 @Configuration
 public class CustomDataSource {
     private final Dotenv dotenv = Dotenv.load();
-    private final String url = dotenv.get("URL");
-    private final String user = dotenv.get("USER");
-    private final String password = dotenv.get("PASSWORD");
 
     @Bean
     public DataSource getConnection() {

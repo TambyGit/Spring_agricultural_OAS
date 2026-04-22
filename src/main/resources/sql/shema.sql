@@ -90,3 +90,6 @@ CREATE TABLE payments (
                           FOREIGN KEY (member_id) REFERENCES members(id),
                           FOREIGN KEY (collectivity_id) REFERENCES collectivities(id)
 );
+
+ALTER TABLE collectivities
+ADD COLUMN number VARCHAR(50) UNIQUE;

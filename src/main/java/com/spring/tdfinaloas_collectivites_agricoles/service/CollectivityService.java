@@ -71,6 +71,14 @@ public class CollectivityService {
         return createdCollectivities;
     }
 
+    public Collectivity findCollectivityById(String collectivityId) throws SQLException {
+        Optional<Collectivity> collectivityOpt = collectivityDao.findById(collectivityId);
+        if (collectivityOpt.isEmpty()) {
+            throw new IllegalArgumentException("Collectivity not found: " + collectivityId);
+        }
+        return collectivityOpt.get();
+    }
+
     public Collectivity updateCollectivityInformation(String collectivityId, Collectivity info) throws SQLException {
         Optional<Collectivity> collectivityOpt = collectivityDao.findById(collectivityId);
         if (collectivityOpt.isEmpty()) {

@@ -4,6 +4,7 @@ import com.spring.tdfinaloas_collectivites_agricoles.model.*;
 import com.spring.tdfinaloas_collectivites_agricoles.service.CollectivityService;
 import com.spring.tdfinaloas_collectivites_agricoles.service.MembershipFeeService;
 import com.spring.tdfinaloas_collectivites_agricoles.service.TransactionService;
+import com.spring.tdfinaloas_collectivites_agricoles.service.FinancialAccountService;
 import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -11,6 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.sql.SQLException;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Map;
 
 @RestController
 @RequestMapping("/collectivities")
@@ -18,13 +20,16 @@ public class CollectivityController {
     private final CollectivityService collectivityService;
     private final MembershipFeeService membershipFeeService;
     private final TransactionService transactionService;
+    private final FinancialAccountService financialAccountService;
 
     public CollectivityController(CollectivityService collectivityService,
                                   MembershipFeeService membershipFeeService,
-                                  TransactionService transactionService) {
+                                  TransactionService transactionService,
+                                  FinancialAccountService financialAccountService) {
         this.collectivityService = collectivityService;
         this.membershipFeeService = membershipFeeService;
         this.transactionService = transactionService;
+        this.financialAccountService = financialAccountService;
     }
 
     @PostMapping
@@ -45,11 +50,40 @@ public class CollectivityController {
         }
     }
 
+    @GetMapping("/{id}")
+    public ResponseEntity<?> getCollectivityById(@PathVariable String id) {
+        try {
+            Collectivity collectivity = collectivityService.findCollectivityById(id);
+            return new ResponseEntity<>(collectivity, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (SQLException e) {
+            return new ResponseEntity<>("Database error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
     @PutMapping("/{id}/informations")
     public ResponseEntity<?> updateCollectivityInformation(@PathVariable String id, @RequestBody Collectivity info) {
         try {
             Collectivity updated = collectivityService.updateCollectivityInformation(id, info);
             return new ResponseEntity<>(updated, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            }
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (SQLException e) {
+            return new ResponseEntity<>("Database error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{id}/financialAccounts")
+    public ResponseEntity<?> getFinancialAccounts(
+            @PathVariable String id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate at) {
+        try {
+            Map<String, Object> accounts = financialAccountService.findByCollectivityIdWithBalanceAtDate(id, at);
+            return new ResponseEntity<>(accounts, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             if (e.getMessage().contains("not found")) {
                 return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);

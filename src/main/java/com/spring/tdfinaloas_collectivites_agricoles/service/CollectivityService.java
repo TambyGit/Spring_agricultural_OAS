@@ -4,7 +4,6 @@ import com.spring.tdfinaloas_collectivites_agricoles.dao.CollectivityDao;
 import com.spring.tdfinaloas_collectivites_agricoles.dao.MemberDao;
 import com.spring.tdfinaloas_collectivites_agricoles.model.*;
 import org.springframework.stereotype.Service;
-
 import java.sql.SQLException;
 import java.util.*;
 
@@ -12,15 +11,13 @@ import java.util.*;
 public class CollectivityService {
     private final CollectivityDao collectivityDao;
     private final MemberDao memberDao;
-    
+
     public CollectivityService(CollectivityDao collectivityDao, MemberDao memberDao) {
         this.collectivityDao = collectivityDao;
         this.memberDao = memberDao;
     }
 
-
     public List<Collectivity> createCollectivities(List<CreateCollectivity> createCollectivities) throws SQLException {
-
         List<Collectivity> createdCollectivities = new ArrayList<>();
         for (CreateCollectivity createCollectivity : createCollectivities) {
             if (createCollectivity.getFederationApproval() == null || !createCollectivity.getFederationApproval()) {
@@ -56,12 +53,7 @@ public class CollectivityService {
             collectivity.setFederationApproval(createCollectivity.getFederationApproval());
 
             collectivityDao.save(collectivity);
-
-            collectivityDao.saveStructure(collectivityId,
-                    structure.getPresident(),
-                    structure.getVicePresident(),
-                    structure.getTreasurer(),
-                    structure.getSecretary());
+            collectivityDao.saveStructure(collectivityId, structure.getPresident(), structure.getVicePresident(), structure.getTreasurer(), structure.getSecretary());
 
             CollectivityStructure collectivityStructure = new CollectivityStructure();
             collectivityStructure.setPresident(president.get());
@@ -69,7 +61,6 @@ public class CollectivityService {
             collectivityStructure.setTreasurer(treasurer.get());
             collectivityStructure.setSecretary(secretary.get());
             collectivity.setStructure(collectivityStructure);
-
             collectivity.setMembers(members);
 
             for (Member member : members) {
@@ -80,48 +71,21 @@ public class CollectivityService {
         return createdCollectivities;
     }
 
-
-    public Collectivity assignNumberAndName(String collectivityId, String number, String name) throws SQLException {
-
+    public Collectivity updateCollectivityInformation(String collectivityId, Collectivity info) throws SQLException {
         Optional<Collectivity> collectivityOpt = collectivityDao.findById(collectivityId);
         if (collectivityOpt.isEmpty()) {
             throw new IllegalArgumentException("Collectivity not found: " + collectivityId);
         }
-        
-        Collectivity collectivity = collectivityOpt.get();
-        
 
-        if (collectivity.hasAttribution()) {
-            throw new IllegalStateException("Collectivity already has a number and name. Modification is not allowed.");
+        if (collectivityDao.existsByName(info.getName())) {
+            throw new IllegalArgumentException("The name '" + info.getName() + "' is already used by another collectivity.");
         }
-        
 
-        if (collectivityDao.existsByName(name)) {
-            throw new IllegalArgumentException("The name '" + name + "' is already used by another collectivity.");
+        if (info.getNumber() != null && collectivityDao.existsByNumber(String.valueOf(info.getNumber()))) {
+            throw new IllegalArgumentException("The number '" + info.getNumber() + "' is already used by another collectivity.");
         }
-        
 
-        String finalNumber = number;
-        if (finalNumber == null || finalNumber.trim().isEmpty()) {
-            finalNumber = generateUniqueNumber();
-        } else {
-            if (collectivityDao.existsByNumber(finalNumber)) {
-                throw new IllegalArgumentException("The number '" + finalNumber + "' is already used by another collectivity.");
-            }
-        }
-        
-
-        collectivityDao.updateNumberAndName(collectivityId, finalNumber, name);
-        
-
+        collectivityDao.updateNumberAndName(collectivityId, String.valueOf(info.getNumber()), info.getName());
         return collectivityDao.findById(collectivityId).orElseThrow(() -> new SQLException("Failed to retrieve updated collectivity"));
-    }
-    
-    private String generateUniqueNumber() throws SQLException {
-        String number;
-        do {
-            number = "COL-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
-        } while (collectivityDao.existsByNumber(number));
-        return number;
     }
 }

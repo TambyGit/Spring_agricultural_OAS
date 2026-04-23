@@ -1,23 +1,30 @@
 package com.spring.tdfinaloas_collectivites_agricoles.controller;
 
-import com.spring.tdfinaloas_collectivites_agricoles.model.Collectivity;
-import com.spring.tdfinaloas_collectivites_agricoles.model.CreateCollectivity;
+import com.spring.tdfinaloas_collectivites_agricoles.model.*;
 import com.spring.tdfinaloas_collectivites_agricoles.service.CollectivityService;
+import com.spring.tdfinaloas_collectivites_agricoles.service.MembershipFeeService;
+import com.spring.tdfinaloas_collectivites_agricoles.service.TransactionService;
+import org.springframework.format.annotation.DateTimeFormat;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
-
 import java.sql.SQLException;
+import java.time.LocalDate;
 import java.util.List;
-import java.util.Map;
 
 @RestController
 @RequestMapping("/collectivities")
 public class CollectivityController {
     private final CollectivityService collectivityService;
+    private final MembershipFeeService membershipFeeService;
+    private final TransactionService transactionService;
 
-    public CollectivityController(CollectivityService collectivityService) {
+    public CollectivityController(CollectivityService collectivityService,
+                                  MembershipFeeService membershipFeeService,
+                                  TransactionService transactionService) {
         this.collectivityService = collectivityService;
+        this.membershipFeeService = membershipFeeService;
+        this.transactionService = transactionService;
     }
 
     @PostMapping
@@ -38,35 +45,60 @@ public class CollectivityController {
         }
     }
 
-    // NOUVELLE MÉTHODE POUR L'ATTRIBUTION
-    @PutMapping("/{collectivityId}/attribution")
-    public ResponseEntity<?> assignAttribution(
-            @PathVariable String collectivityId,
-            @RequestBody Map<String, String> request) {
-        
-        // Vérifier que le nom est présent
-        String name = request.get("name");
-        if (name == null || name.trim().isEmpty()) {
-            return new ResponseEntity<>("Name is required", HttpStatus.BAD_REQUEST);
-        }
-        
-        String number = request.get("number");
-        
+    @PutMapping("/{id}/informations")
+    public ResponseEntity<?> updateCollectivityInformation(@PathVariable String id, @RequestBody Collectivity info) {
         try {
-            Collectivity updatedCollectivity = collectivityService.assignNumberAndName(collectivityId, number, name);
-            return new ResponseEntity<>(updatedCollectivity, HttpStatus.OK);
+            Collectivity updated = collectivityService.updateCollectivityInformation(id, info);
+            return new ResponseEntity<>(updated, HttpStatus.OK);
         } catch (IllegalArgumentException e) {
             if (e.getMessage().contains("not found")) {
                 return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
             }
-            if (e.getMessage().contains("already has a number")) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-            }
-            if (e.getMessage().contains("already used by another collectivity")) {
-                return new ResponseEntity<>(e.getMessage(), HttpStatus.CONFLICT);
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
+        } catch (SQLException e) {
+            return new ResponseEntity<>("Database error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{id}/membershipFees")
+    public ResponseEntity<?> getMembershipFees(@PathVariable String id) {
+        try {
+            List<MembershipFee> fees = membershipFeeService.findByCollectivityId(id);
+            return new ResponseEntity<>(fees, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+        } catch (SQLException e) {
+            return new ResponseEntity<>("Database error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @PostMapping("/{id}/membershipFees")
+    public ResponseEntity<?> createMembershipFees(@PathVariable String id, @RequestBody List<CreateMembershipFee> fees) {
+        try {
+            List<MembershipFee> created = membershipFeeService.createMembershipFees(id, fees);
+            return new ResponseEntity<>(created, HttpStatus.CREATED);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
             }
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
-        } catch (IllegalStateException e) {
+        } catch (SQLException e) {
+            return new ResponseEntity<>("Database error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+    }
+
+    @GetMapping("/{id}/transactions")
+    public ResponseEntity<?> getTransactions(
+            @PathVariable String id,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to) {
+        try {
+            List<Transaction> transactions = transactionService.findByCollectivityIdAndDateRange(id, from, to);
+            return new ResponseEntity<>(transactions, HttpStatus.OK);
+        } catch (IllegalArgumentException e) {
+            if (e.getMessage().contains("not found")) {
+                return new ResponseEntity<>(e.getMessage(), HttpStatus.NOT_FOUND);
+            }
             return new ResponseEntity<>(e.getMessage(), HttpStatus.BAD_REQUEST);
         } catch (SQLException e) {
             return new ResponseEntity<>("Database error: " + e.getMessage(), HttpStatus.INTERNAL_SERVER_ERROR);

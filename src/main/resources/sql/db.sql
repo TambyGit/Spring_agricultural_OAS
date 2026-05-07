@@ -1,0 +1,1 @@
+CREATE DATABASE agricultural_collectivities_db;
